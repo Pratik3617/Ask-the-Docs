@@ -1,0 +1,24 @@
+# UI
+streamlit
+
+# API
+fastapi
+uvicorn
+
+# Document processing
+pdfplumber
+
+# Embeddings
+sentence-transformers
+
+# vectore store
+faiss-cpu
+
+# LLM
+transformers
+torch
+
+# utilities
+numpy
+pydantic
+loguru
