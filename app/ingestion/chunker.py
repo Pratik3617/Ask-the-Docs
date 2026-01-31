@@ -28,8 +28,8 @@ def chunk_text(text: str) -> List[Dict]:
         - chunk_id, text, start_char_pos, end_char_pos
     """
 
-    normalize_text = normalize_text(text)
-    text_length = len(normalize_text)
+    normalized_text = normalize_text(text)
+    text_length = len(normalized_text)
 
     if text_length == 0:
         raise ValueError("Cannot chunk empty text")
@@ -42,7 +42,7 @@ def chunk_text(text: str) -> List[Dict]:
 
     while start < text_length:
         end = start + CHUNK_SIZE
-        chunk_content = normalize_text[start:end]
+        chunk_content = normalized_text[start:end]
 
         if chunk_content.strip():
             chunks.append({

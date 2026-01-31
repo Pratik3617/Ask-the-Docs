@@ -26,6 +26,7 @@ def build_prompt(
 
     context_blocks = []
     for i,item in enumerate(retrieved_chunks, start=1):
+        print("item:",item)
         context_blocks.append(
             f"[context {i}\n{item['text']}]"
         )

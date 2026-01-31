@@ -1,5 +1,5 @@
 import torch
-from transformers import AutoTokenizer, AutoModelForCasualLM
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, BitsAndBytesConfig
 
 from app.config import LLM_MODEL, MAX_NEW_TOKENS, TEMPERATURE
 from app.logger import get_logger
@@ -8,22 +8,28 @@ logger = get_logger()
 
 logger.info(f"Loading LLM model: {LLM_MODEL}")
 
+bnb_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_compute_dtype=torch.float16,
+    bnb_4bit_use_double_quant=True
+)
+
 tokenizer = AutoTokenizer.from_pretrained(LLM_MODEL)
 
-model = AutoModelForCasualLM.from_pretrained(
+model = AutoModelForSeq2SeqLM.from_pretrained(
     LLM_MODEL,
-    torch_dtype=torch.float32,
-    device_map="cpu"
+    quantization_config=bnb_config,
+    # torch_dtype=torch.float32,
 )
 
 model.eval()
 
-logger.info("Phi-3 Mini model loaded successfully")
+logger.info("Flan-T5 model loaded successfully")
 
 
 def generate_answer(prompt: str) -> str:
     """
-    Generate an answer from Phi-3 using a grounded prompt
+    Generate an answer from flan-t5 using a grounded prompt
     """
 
     if not prompt or not prompt.strip():
@@ -47,13 +53,8 @@ def generate_answer(prompt: str) -> str:
             pad_token_id = tokenizer.eos_token_id
         )
     
-    decoded = tokenizer.decode(
-        output[0],
-        skip_special_tokens = True
-    )
+    answer = tokenizer.decode(output[0], skip_special_tokens=True).strip()
 
-    # Strip the prompt from the generated output
-    answer = decoded[len(prompt):].strip()
 
     logger.info(f"LLM inference completed | answer length={len(answer)}")
 

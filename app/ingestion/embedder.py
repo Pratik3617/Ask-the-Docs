@@ -40,6 +40,7 @@ def embed_chunks(chunks: List[Dict]) -> Tuple[np.ndarray, List[Dict]]:
     metadata = [
         {
             "chunk_id": chunk["chunk_id"],
+            "text": chunk["text"],  
             "start_char_pos": chunk["start_char_pos"],
             "end_char_pos": chunk["end_char_pos"]
         }
