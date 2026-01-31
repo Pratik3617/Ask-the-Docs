@@ -5,6 +5,10 @@ import pdfplumber
 from app.config import STORAGE_DIR
 from app.logger import get_logger
 
+from pdf2image import convert_from_bytes
+import pytesseract
+from app.config import MIN_TEXT_LENGTH
+
 logger = get_logger()
 
 SUPPORTED_FILES = {".pdf", ".txt"}
@@ -39,7 +43,7 @@ def load_text_file(file: BinaryIO) -> str:
     
     return text
 
-def load_pdf_file(file_path: str) -> str:
+def extract_text_from_pdf(file_path: str) -> str:
     extracted_pages = []
 
     with pdfplumber.open(file_path) as pdf:
@@ -49,16 +53,27 @@ def load_pdf_file(file_path: str) -> str:
             page_text = page.extract_text()
             if page_text:
                 extracted_pages.append(page_text)
-    
-    if not extracted_pages:
-        raise ValueError("PDF contains no extractable text (OCR not supported)")
-    
-    text = "\n".join(extracted_pages).strip()
 
-    if not text:
-        raise ValueError("PDF text extraction failed")
-    
+    text = "\n".join(extracted_pages).strip()
     return text
+
+
+def ocr_pdf(file_bytes: bytes) -> str:
+    images = convert_from_bytes(file_bytes, dpi=300)
+    ocr_text = []
+
+    for img in images:
+        img = img.convert("L")  # grayscale
+        text = pytesseract.image_to_string(
+            img,
+            lang="eng",
+            config="--oem 3 --psm 6"
+        )
+        if text:
+            ocr_text.append(text)
+
+    return "\n".join(ocr_text).strip()
+
 
 def load_document(
         file_name: str,
@@ -83,11 +98,35 @@ def load_document(
     elif extension == ".pdf":
         os.makedirs(STORAGE_DIR, exist_ok=True)
         temp_path = os.path.join(STORAGE_DIR, file_name)
-        
-        with open(temp_path, "wb") as f:
-            f.write(file.read())
 
-        text = load_pdf_file(temp_path)
+        file_bytes = file.read()
+
+        with open(temp_path, "wb") as f:
+            f.write(file_bytes)
+
+        # PDF text extraction
+        text = extract_text_from_pdf(temp_path)
+
+        # Decide whether OCR is needed
+        if not text or len(text.strip()) < MIN_TEXT_LENGTH:
+            logger.warning(
+                "PDF text extraction insufficient, falling back to OCR"
+            )
+
+            ocr_text = ocr_pdf(file_bytes)
+
+            if not ocr_text:
+                os.remove(temp_path)
+                raise ValueError("OCR failed to extract text from PDF")
+
+            text = ocr_text
+            logger.info(
+                f"OCR successful | extracted_length={len(text)}"
+            )
+        else:
+            logger.info(
+                f"PDF text extracted without OCR | length={len(text)}"
+            )
 
         os.remove(temp_path)
 
