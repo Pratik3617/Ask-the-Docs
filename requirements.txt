@@ -23,6 +23,8 @@ numpy
 pydantic
 loguru
 accelerate
+bitsandbytes
+python-multipart
 
 # OCR
 pytesseract
