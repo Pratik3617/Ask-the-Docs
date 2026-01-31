@@ -22,3 +22,10 @@ torch
 numpy
 pydantic
 loguru
+accelerate
+
+# OCR
+pytesseract
+pdf2image
+pillow
+pypdf
